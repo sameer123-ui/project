@@ -16,8 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($result->num_rows === 1) {
         $user = $result->fetch_assoc();
-        $_SESSION['user'] = $user;
 
+        // ✅ Set necessary session values
+        $_SESSION['user'] = $user;               // Optional full user array
+        $_SESSION['email'] = $user['email'];     // Used in access checks
+        $_SESSION['role'] = $user['role'];       // Used for role-based routing
+        $_SESSION['user_id'] = $user['id'];      // Needed for booking
+
+        // Redirect to appropriate dashboard
         if ($user['role'] === 'admin') {
             header("Location: dashboard_admin.php");
         } else {
