@@ -12,18 +12,28 @@ $user_id = $_SESSION['user']['id'];
 $message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $car_id = $_POST['car_id'];
+    $car_id     = $_POST['car_id'];
     $start_date = $_POST['start_date'];
-    $end_date = $_POST['end_date'];
+    $end_date   = $_POST['end_date'];
 
-    // Validate date input
-    if ($end_date < $start_date) {
+    $today = date('Y-m-d');
+
+    // Basic date validation
+    if (empty($car_id) || empty($start_date) || empty($end_date)) {
+        $message = "Please fill in all fields.";
+    } elseif ($start_date > $end_date) {
         $message = "End date cannot be before start date.";
+    } elseif ($start_date < $today || $end_date < $today) {
+        $message = "Booking dates cannot be in the past.";
     } else {
         // Check for overlapping bookings
-        $stmt = $conn->prepare("SELECT * FROM bookings 
-            WHERE car_id = ? AND status = 'booked' 
-            AND start_date <= ? AND end_date >= ?");
+        $stmt = $conn->prepare("
+            SELECT * FROM bookings 
+            WHERE car_id = ? 
+              AND status = 'booked' 
+              AND start_date <= ? 
+              AND end_date >= ?
+        ");
         $stmt->bind_param("iss", $car_id, $end_date, $start_date);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -31,7 +41,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($result->num_rows > 0) {
             $message = "This car is already booked for the selected dates.";
         } else {
-            $stmt = $conn->prepare("INSERT INTO bookings (user_id, car_id, start_date, end_date, status) VALUES (?, ?, ?, ?, 'booked')");
+            $stmt = $conn->prepare("
+                INSERT INTO bookings (user_id, car_id, start_date, end_date, status)
+                VALUES (?, ?, ?, ?, 'booked')
+            ");
             $stmt->bind_param("iiss", $user_id, $car_id, $start_date, $end_date);
             if ($stmt->execute()) {
                 $message = "Car booked successfully!";
@@ -51,7 +64,12 @@ $cars = $conn->query("SELECT * FROM cars");
 <head>
     <title>Book Car</title>
     <style>
-        body { font-family: Arial; margin: 0; padding: 0px; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0px;
+            background-color: #f2f2f2;
+        }
         .navbar {
             background: #0069d9;
             color: white;
@@ -69,10 +87,50 @@ $cars = $conn->query("SELECT * FROM cars");
         .navbar a:hover {
             text-decoration: underline;
         }
-        .message { color: red; margin-bottom: 20px; }
-        form { margin-top: 20px; }
-        select, input { margin: 5px 0; padding: 8px; width: 200px; }
-        button { padding: 8px 16px; }
+        .container {
+            padding: 30px;
+        }
+        .message {
+            margin-bottom: 20px;
+            padding: 10px;
+            font-weight: bold;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        form {
+            margin-top: 20px;
+            background: #fff;
+            padding: 20px;
+            max-width: 400px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+        }
+        select, input[type="date"], button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #0069d9;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -83,32 +141,40 @@ $cars = $conn->query("SELECT * FROM cars");
             <a href="index.php">Browse Cars</a>
             <a href="book_car.php">Book</a>
             <a href="my_bookings.php">My Bookings</a>
+               <a href="profile.php">Profle</a>
             <a href="logout.php">Logout</a>
         </div>
     </div>
 
-    <h2>Book a Car</h2>
+    <div class="container">
+        <h2>Book a Car</h2>
 
-    <?php if (!empty($message)) echo "<p class='message'>" . htmlspecialchars($message) . "</p>"; ?>
+        <?php if (!empty($message)): ?>
+            <div class="message <?= strpos($message, 'successfully') !== false ? 'success' : 'error' ?>">
+                <?= htmlspecialchars($message) ?>
+            </div>
+        <?php endif; ?>
 
-    <form method="post" onsubmit="return validateDates()">
-        <label>Choose Car:</label><br>
-        <select name="car_id" required>
-            <?php while ($car = $cars->fetch_assoc()): ?>
-                <option value="<?= htmlspecialchars($car['id']) ?>">
-                    <?= htmlspecialchars($car['car_name']) ?> - <?= htmlspecialchars($car['model']) ?>
-                </option>
-            <?php endwhile; ?>
-        </select><br>
+        <form method="post" onsubmit="return validateDates()">
+            <label for="car_id">Choose Car:</label>
+            <select name="car_id" required>
+                <option value="">-- Select a car --</option>
+                <?php while ($car = $cars->fetch_assoc()): ?>
+                    <option value="<?= htmlspecialchars($car['id']) ?>">
+                        <?= htmlspecialchars($car['name']) ?> - <?= htmlspecialchars($car['model']) ?>
+                    </option>
+                <?php endwhile; ?>
+            </select>
 
-        <label>Start Date:</label><br>
-        <input type="date" id="start_date" name="start_date" required min="<?= date('Y-m-d') ?>"><br>
+            <label for="start_date">Start Date:</label>
+            <input type="date" id="start_date" name="start_date" required min="<?= date('Y-m-d') ?>">
 
-        <label>End Date:</label><br>
-        <input type="date" id="end_date" name="end_date" required min="<?= date('Y-m-d') ?>"><br>
+            <label for="end_date">End Date:</label>
+            <input type="date" id="end_date" name="end_date" required min="<?= date('Y-m-d') ?>">
 
-        <button type="submit">Book Car</button>
-    </form>
+            <button type="submit">Book Car</button>
+        </form>
+    </div>
 
     <script>
         function validateDates() {

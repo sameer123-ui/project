@@ -79,6 +79,7 @@ $result = $conn->query("SELECT * FROM cars WHERE status = 'available' ORDER BY i
         <a href="index.php">Browse Cars</a>
          <a href="book_car.php">Book</a>
         <a href="my_bookings.php">My Bookings</a>
+           <a href="profile.php">Profle</a>
         <a href="logout.php">Logout</a>
     </div>
     </div>
