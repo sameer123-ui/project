@@ -24,9 +24,8 @@ if (isset($_POST['update_profile'])) {
     $name = trim($_POST['name']);
     $email = trim($_POST['email']);
 
-    // Additional admin fields can be fetched here, for example:
     if ($role === 'admin') {
-        // e.g. $admin_note = trim($_POST['admin_note']);
+        // Optional admin fields here
     }
 
     if (empty($name) || empty($email)) {
@@ -34,7 +33,6 @@ if (isset($_POST['update_profile'])) {
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = "Invalid email format.";
     } else {
-        // Update query
         $stmt = $conn->prepare("UPDATE users SET name = ?, email = ? WHERE id = ?");
         $stmt->bind_param("ssi", $name, $email, $user_id);
         if ($stmt->execute()) {
@@ -49,7 +47,7 @@ if (isset($_POST['update_profile'])) {
     }
 }
 
-// Password change handler same as before
+// Password change handler
 if (isset($_POST['change_password'])) {
     $current_password = $_POST['current_password'];
     $new_password = $_POST['new_password'];
@@ -91,7 +89,6 @@ if (isset($_POST['change_password'])) {
         * {
             box-sizing: border-box;
         }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f9fafb;
@@ -99,9 +96,33 @@ if (isset($_POST['change_password'])) {
             margin: 0;
             padding: 0;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             min-height: 100vh;
             align-items: center;
+        }
+        .navbar {
+            width: 100%;
+            background: #0069d9;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+        .navbar strong {
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        .navbar nav a {
+            color: white;
+            text-decoration: none;
+            margin-left: 15px;
+            font-weight: bold;
+            transition: text-decoration 0.3s ease;
+        }
+        .navbar nav a:hover {
+            text-decoration: underline;
         }
 
         .container {
@@ -111,6 +132,8 @@ if (isset($_POST['change_password'])) {
             padding: 30px 40px;
             border-radius: 12px;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            margin: 40px auto;
+            box-sizing: border-box;
         }
 
         h2 {
@@ -199,11 +222,49 @@ if (isset($_POST['change_password'])) {
         @media (max-width: 640px) {
             .container {
                 padding: 20px 25px;
+                margin: 20px 10px;
+            }
+            .navbar {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 10px;
+            }
+            .navbar nav {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                width: 100%;
+            }
+            .navbar nav a {
+                margin: 5px 10px;
             }
         }
     </style>
 </head>
 <body>
+
+<header class="navbar">
+    <strong><?= ucfirst($role) ?> Dashboard</strong>
+    <nav>
+        <?php if ($role === 'admin'): ?>
+            <a href="dashboard_admin.php">Home</a>
+            <a href="add_car.php">Add Car</a>
+            <a href="view_cars.php">View Cars</a>
+            <a href="view_bookings.php">View Bookings</a>
+            <a href="view_users.php">View Users</a>
+            <a href="view_revenue.php">View Revenue</a>
+            <a href="profile.php">Profile</a>
+            <a href="logout.php">Logout</a>
+        <?php else: ?>
+            <a href="dashboard_user.php">Home</a>
+            <a href="index.php">Browse Cars</a>
+            <a href="book_car.php">Book</a>
+            <a href="my_bookings.php">My Bookings</a>
+            <a href="profile.php">Profile</a>
+            <a href="logout.php">Logout</a>
+        <?php endif; ?>
+    </nav>
+</header>
 
 <div class="container">
 

@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             min-height: 100vh;
         }
         .navbar {
-            background: #343a40;
+            background: #0069d9;
             color: white;
             padding: 15px 20px;
             display: flex;
@@ -157,6 +157,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="add_car.php">Add Car</a>
             <a href="view_cars.php">View Cars</a>
             <a href="view_bookings.php">View Bookings</a>
+            <a href="view_users.php">View Users</a>
+                    <a href="view_revenue.php">View Revenue</a>
                <a href="profile.php">Profle</a>
             <a href="logout.php">Logout</a>
         </div>

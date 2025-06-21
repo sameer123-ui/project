@@ -1,52 +1,35 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 session_start();
-require 'db.php'; // your mysqli $conn connection
+require 'db.php';
 
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
     header('Location: login.php');
     exit;
 }
 
-// Function to check if a column exists in a table
 function columnExists($conn, $table, $column) {
     $sql = "SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS 
             WHERE TABLE_SCHEMA = DATABASE() 
             AND TABLE_NAME = '$table' 
             AND COLUMN_NAME = '$column'";
     $result = $conn->query($sql);
-    if ($result) {
-        $row = $result->fetch_assoc();
-        return $row['count'] > 0;
-    }
-    return false;
+    return $result ? $result->fetch_assoc()['count'] > 0 : false;
 }
 
-// Modified getCount function that optionally uses a custom date column
 function getCount($conn, $table, $interval = null, $extraCondition = '', $dateColumn = 'created_at') {
-    // Check if the date column exists; if not, ignore interval filtering
     if ($interval && !columnExists($conn, $table, $dateColumn)) {
-        $interval = null; // ignore interval if date column missing
+        $interval = null;
     }
 
     $sql = "SELECT COUNT(*) as total FROM $table";
     if ($interval) {
         $sql .= " WHERE $dateColumn >= DATE_SUB(NOW(), INTERVAL $interval)";
-        if ($extraCondition) {
-            $sql .= " AND $extraCondition";
-        }
+        if ($extraCondition) $sql .= " AND $extraCondition";
     } elseif ($extraCondition) {
         $sql .= " WHERE $extraCondition";
     }
 
     $stmt = $conn->prepare($sql);
-    if (!$stmt) {
-        die("Prepare failed: (" . $conn->errno . ") " . $conn->error);
-    }
-
     $stmt->execute();
     $stmt->bind_result($total);
     $stmt->fetch();
@@ -55,53 +38,22 @@ function getCount($conn, $table, $interval = null, $extraCondition = '', $dateCo
     return $total;
 }
 
-// Car counts with intervals, using 'added_date' if exists, otherwise default
 $car_date_col = columnExists($conn, 'cars', 'added_date') ? 'added_date' : 'created_at';
-
-$car_counts = [
-    'all'     => getCount($conn, 'cars', null, '', $car_date_col),
-    '1year'   => getCount($conn, 'cars', '1 YEAR', '', $car_date_col),
-    '6months' => getCount($conn, 'cars', '6 MONTH', '', $car_date_col),
-    '1month'  => getCount($conn, 'cars', '1 MONTH', '', $car_date_col),
-    '1week'   => getCount($conn, 'cars', '1 WEEK', '', $car_date_col),
-];
-
-// User counts with intervals (assume users have 'created_at' column)
 $user_date_col = columnExists($conn, 'users', 'created_at') ? 'created_at' : null;
-
-$user_counts = [
-    'all'     => getCount($conn, 'users', null, '', $user_date_col),
-    '1year'   => getCount($conn, 'users', '1 YEAR', '', $user_date_col),
-    '6months' => getCount($conn, 'users', '6 MONTH', '', $user_date_col),
-    '1month'  => getCount($conn, 'users', '1 MONTH', '', $user_date_col),
-    '1week'   => getCount($conn, 'users', '1 WEEK', '', $user_date_col),
-];
-
-// Booking counts with intervals (assume bookings have 'created_at' column)
 $booking_date_col = columnExists($conn, 'bookings', 'created_at') ? 'created_at' : null;
 
-$booking_counts = [
-    'all'     => getCount($conn, 'bookings', null, '', $booking_date_col),
-    '1year'   => getCount($conn, 'bookings', '1 YEAR', '', $booking_date_col),
-    '6months' => getCount($conn, 'bookings', '6 MONTH', '', $booking_date_col),
-    '1month'  => getCount($conn, 'bookings', '1 MONTH', '', $booking_date_col),
-    '1week'   => getCount($conn, 'bookings', '1 WEEK', '', $booking_date_col),
-];
+$carCount = getCount($conn, 'cars', null, '', $car_date_col);
+$userCount = getCount($conn, 'users', null, '', $user_date_col);
+$bookingCount = getCount($conn, 'bookings', null, '', $booking_date_col);
+$completedCount = getCount($conn, 'bookings', null, "status='completed'");
+$cancelledCount = getCount($conn, 'bookings', null, "status='cancelled'");
+$bookedCount = getCount($conn, 'bookings', null, "status='booked'");
 
-// Booking status counts (all time)
-$status_counts = [
-    'booked'    => getCount($conn, 'bookings', null, "status='booked'"),
-    'completed' => getCount($conn, 'bookings', null, "status='completed'"),
-    'cancelled' => getCount($conn, 'bookings', null, "status='cancelled'"),
-];
-
-// Total revenue from completed bookings (sum total_amount)
 $stmt = $conn->prepare("SELECT COALESCE(SUM(total_amount),0) FROM bookings WHERE status='completed'");
 $stmt->execute();
-$stmt->bind_result($total_revenue);
+$stmt->bind_result($revenue);
 $stmt->fetch();
 $stmt->close();
-
 ?>
 
 <!DOCTYPE html>
@@ -109,70 +61,123 @@ $stmt->close();
 <head>
     <title>Admin Dashboard</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f4f6f9;
+        }
+
+        body {
+            background-color: #f0f2f5;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            color: #333;
         }
+
         .navbar {
-            background: #343a40;
-            color: white;
-            padding: 15px 20px;
+            background-color: #0069d9;
+            padding: 15px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
+
         .navbar a {
-            color: white;
+            color: #ecf0f1;
             text-decoration: none;
-            margin-left: 15px;
-            font-weight: bold;
+            margin-left: 20px;
+            font-weight: 600;
+            transition: color 0.3s ease;
         }
+
         .navbar a:hover {
-            text-decoration: underline;
+            color: #1abc9c;
         }
+
         .container {
             flex: 1;
-            padding: 30px;
             max-width: 1000px;
-            margin: auto;
+            margin: 40px auto;
+            padding: 0 20px;
         }
+
         .card {
-            background: white;
-            border-radius: 10px;
-            padding: 25px;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 30px 40px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+        }
+
+        .card h2 {
             margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            color: #34495e;
+            font-weight: 700;
         }
+
+        .card p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #666;
+        }
+
         .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-top: 15px;
+            display: flex;
+            gap: 25px;
+            flex-wrap: wrap;
+            justify-content: space-between;
         }
+
         .stat-box {
-            background: #e9ecef;
-            border-radius: 10px;
-            padding: 15px;
+            flex: 1 1 30%;
+            background-color: #f7fafc;
+            border-radius: 12px;
+            padding: 25px 20px;
             text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: default;
         }
+
+        .stat-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+
         .stat-box h3 {
-            margin-bottom: 5px;
-            color: #333;
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+            color: #2c3e50;
         }
+
         .stat-box p {
-            font-size: 18px;
-            color: #007bff;
+            font-size: 2.2rem;
+            font-weight: 700;
+            user-select: none;
         }
+
+        .stat-box.total p { color: #3498db; }
+        .stat-box.users p { color: #9b59b6; }
+        .stat-box.bookings p { color: #1abc9c; }
+        .stat-box.completed p { color: #2ecc71; }
+        .stat-box.cancelled p { color: #e74c3c; }
+        .stat-box.revenue p { color: #f39c12; }
+
         footer {
-            background: #343a40;
-            color: white;
+            background-color: #2c3e50;
+            color: #ecf0f1;
             text-align: center;
-            padding: 15px;
+            padding: 20px 0;
             margin-top: auto;
+            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -185,60 +190,47 @@ $stmt->close();
             <a href="add_car.php">Add Car</a>
             <a href="view_cars.php">View Cars</a>
             <a href="view_bookings.php">View Bookings</a>
+            <a href="view_users.php">View Users</a>
+                    <a href="view_revenue.php">View Revenue</a>
             <a href="profile.php">Profile</a>
             <a href="logout.php">Logout</a>
         </div>
     </div>
 
     <div class="container">
-
         <div class="card">
             <h2>Welcome, <?php echo htmlspecialchars($_SESSION['user']['name']); ?> 👋</h2>
-            <p>Here's a quick overview of the system stats:</p>
+            <p>Monitor and manage the platform's activity including cars, users, bookings, and revenue.</p>
         </div>
-
-        <div class="card">
-            <h2>📦 Car Inventory</h2>
-            <div class="stats-grid">
-                <div class="stat-box"><h3>All Time</h3><p><?php echo $car_counts['all']; ?> Cars</p></div>
-                <div class="stat-box"><h3>1 Year</h3><p><?php echo $car_counts['1year']; ?> Cars</p></div>
-                <div class="stat-box"><h3>6 Months</h3><p><?php echo $car_counts['6months']; ?> Cars</p></div>
-                <div class="stat-box"><h3>1 Month</h3><p><?php echo $car_counts['1month']; ?> Cars</p></div>
-                <div class="stat-box"><h3>1 Week</h3><p><?php echo $car_counts['1week']; ?> Cars</p></div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>👥 Registered Users</h2>
-            <div class="stats-grid">
-                <div class="stat-box"><h3>All Time</h3><p><?php echo $user_counts['all']; ?> Users</p></div>
-                <div class="stat-box"><h3>1 Year</h3><p><?php echo $user_counts['1year']; ?> Users</p></div>
-                <div class="stat-box"><h3>6 Months</h3><p><?php echo $user_counts['6months']; ?> Users</p></div>
-                <div class="stat-box"><h3>1 Month</h3><p><?php echo $user_counts['1month']; ?> Users</p></div>
-                <div class="stat-box"><h3>1 Week</h3><p><?php echo $user_counts['1week']; ?> Users</p></div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>📅 Bookings</h2>
-            <div class="stats-grid">
-                <div class="stat-box"><h3>All Time</h3><p><?php echo $booking_counts['all']; ?> Bookings</p></div>
-                <div class="stat-box"><h3>1 Year</h3><p><?php echo $booking_counts['1year']; ?> Bookings</p></div>
-                <div class="stat-box"><h3>6 Months</h3><p><?php echo $booking_counts['6months']; ?> Bookings</p></div>
-                <div class="stat-box"><h3>1 Month</h3><p><?php echo $booking_counts['1month']; ?> Bookings</p></div>
-                <div class="stat-box"><h3>1 Week</h3><p><?php echo $booking_counts['1week']; ?> Bookings</p></div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>📊 Booking Status</h2>
-            <div class="stats-grid">
-                <div class="stat-box"><h3>Booked</h3><p><?php echo $status_counts['booked']; ?></p></div>
-                <div class="stat-box"><h3>Completed</h3><p><?php echo $status_counts['completed']; ?></p></div>
-                <div class="stat-box"><h3>Cancelled</h3><p><?php echo $status_counts['cancelled']; ?></p></div>
-                <div class="stat-box"><h3>Total Revenue</h3><p>$<?php echo number_format($total_revenue, 2); ?></p></div>
-            </div>
-        </div>
+<div class="card">
+    <h2>System Overview</h2>
+    <div class="stats-grid">
+        <a href="view_cars.php" class="stat-box total" title="View all cars">
+            <h3>Total Cars</h3>
+            <p><?php echo $carCount; ?></p>
+        </a>
+        <a href="view_users.php" class="stat-box users" title="View all users">
+            <h3>Total Users</h3>
+            <p><?php echo $userCount; ?></p>
+        </a>
+        <a href="view_bookings.php" class="stat-box bookings" title="View all bookings">
+            <h3>Total Bookings</h3>
+            <p><?php echo $bookingCount; ?></p>
+        </a>
+        <a href="view_bookings.php?status=completed" class="stat-box completed" title="View completed bookings">
+            <h3>Completed</h3>
+            <p><?php echo $completedCount; ?></p>
+        </a>
+        <a href="view_bookings.php?status=cancelled" class="stat-box cancelled" title="View cancelled bookings">
+            <h3>Cancelled</h3>
+            <p><?php echo $cancelledCount; ?></p>
+        </a>
+        <a href="view_revenue.php" class="stat-box revenue" title="View revenue details">
+            <h3>Total Revenue</h3>
+            <p>Rs <?php echo number_format($revenue, 2); ?></p>
+        </a>
+    </div>
+</div>
 
     </div>
 

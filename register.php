@@ -7,7 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name     = $_POST['name'];
     $email    = $_POST['email'];
     $password = hash('sha256', $_POST['password']);
-    $role     = $_POST['role'];
+    $role     = 'user';  // force role to 'user'
 
     $stmt = $conn->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)");
     $stmt->bind_param("ssss", $name, $email, $password, $role);
@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Register</title>
+    <title>User Registration</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-bottom: 20px;
             color: #333;
         }
-        input, select, button {
+        input, button {
             width: 100%;
             padding: 12px;
             margin: 10px 0;
@@ -84,15 +84,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <div class="form-box">
-        <h2>User/Admin Registration</h2>
+        <h2>User Registration</h2>
         <form method="POST">
             <input type="text" name="name" placeholder="Full Name" required />
             <input type="email" name="email" placeholder="Email" required />
             <input type="password" name="password" placeholder="Password" required />
-            <select name="role" required>
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
-            </select>
             <button type="submit">Register</button>
         </form>
         <div class="msg"><?php echo $message; ?></div>

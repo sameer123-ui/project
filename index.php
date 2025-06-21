@@ -100,7 +100,7 @@ $result = $conn->query("SELECT * FROM cars WHERE status = 'available' ORDER BY i
                 <tr>
                     <td><?php echo htmlspecialchars($car['name']); ?></td>
                     <td><?php echo htmlspecialchars($car['model']); ?></td>
-                    <td>$<?php echo number_format($car['price_per_day'], 2); ?></td>
+                    <td>Rs <?php echo number_format($car['price_per_day'], 2); ?></td>
                     <td><a class="button" href="book_car.php?id=<?php echo $car['id']; ?>">Book Now</a></td>
                 </tr>
                 <?php endwhile; ?>
