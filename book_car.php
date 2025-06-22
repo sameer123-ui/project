@@ -146,6 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-decoration: underline;
         }
         .container {
+        margin-left: 600px;
             padding: 30px;
         }
         .message {
@@ -174,12 +175,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             display: block;
             margin-top: 15px;
             margin-bottom: 5px;
+            margin-left:-10px;
             font-weight: 600;
         }
         select, input[type="text"], input[type="date"], input[type="time"], button {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
+            margin-left: -10px;
             border-radius: 6px;
             border: 1px solid #ccc;
             font-size: 16px;
