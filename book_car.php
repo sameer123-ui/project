@@ -3,7 +3,6 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-
 include 'db.php';
 session_start();
 
@@ -21,41 +20,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pickup_location = trim($_POST['pickup_location']);
     $drop_location   = trim($_POST['drop_location']);
     $start_date      = $_POST['start_date'];
+    $start_time      = $_POST['start_time'];
     $end_date        = $_POST['end_date'];
+    $end_time        = $_POST['end_time'];
 
     $today = date('Y-m-d');
+    $now = date('Y-m-d H:i:s');
 
     // Validate inputs
-    if (empty($car_id) || empty($pickup_location) || empty($drop_location) || empty($start_date) || empty($end_date)) {
+    if (empty($car_id) || empty($pickup_location) || empty($drop_location) || empty($start_date) || empty($start_time) || empty($end_date) || empty($end_time)) {
         $message = "Please fill in all fields.";
-    } elseif ($start_date > $end_date) {
-        $message = "End date cannot be before start date.";
+    } elseif ($start_date > $end_date || ($start_date == $end_date && $start_time >= $end_time)) {
+        $message = "End date/time must be after start date/time.";
     } elseif ($start_date < $today || $end_date < $today) {
         $message = "Booking dates cannot be in the past.";
     } else {
-        // Check for overlapping bookings
+        // Combine dates and times to datetime strings
+        $startDateTime = $start_date . ' ' . $start_time;
+        $endDateTime = $end_date . ' ' . $end_time;
+
+        // Check overlapping bookings considering date and time
         $stmt = $conn->prepare("
             SELECT * FROM bookings 
-            WHERE car_id = ? 
-              AND status = 'booked' 
-              AND start_date <= ? 
-              AND end_date >= ?
+            WHERE car_id = ?
+              AND status = 'booked'
+              AND (
+                    (start_date < ? AND end_date > ?) OR
+                    (start_date = ? AND start_time < ?) OR
+                    (end_date = ? AND end_time > ?) OR
+                    (start_date > ? AND end_date < ?)
+              )
         ");
-        $stmt->bind_param("iss", $car_id, $end_date, $start_date);
-        $stmt->execute();
-        $result = $stmt->get_result();
 
-        if ($result->num_rows > 0) {
-            $message = "This car is already booked for the selected dates.";
+        // We need to check overlaps based on combined datetime ranges
+        // To simplify, fetch bookings for the car and check overlap in PHP below
+
+        // So we fetch all bookings for this car and then filter overlaps in PHP:
+
+        $stmt2 = $conn->prepare("SELECT start_date, start_time, end_date, end_time FROM bookings WHERE car_id = ? AND status = 'booked' ORDER BY start_date, start_time");
+        $stmt2->bind_param("i", $car_id);
+        $stmt2->execute();
+        $result2 = $stmt2->get_result();
+
+        $overlap = false;
+        while ($row = $result2->fetch_assoc()) {
+            $bookingStart = new DateTime($row['start_date'] . ' ' . $row['start_time']);
+            $bookingEnd = new DateTime($row['end_date'] . ' ' . $row['end_time']);
+            $requestedStart = new DateTime($startDateTime);
+            $requestedEnd = new DateTime($endDateTime);
+
+            // Check for overlap condition
+            if ($requestedStart < $bookingEnd && $requestedEnd > $bookingStart) {
+                $overlap = true;
+                break;
+            }
+        }
+        $stmt2->close();
+
+        if ($overlap) {
+            $message = "This car is already booked for the selected date and time range.";
         } else {
-            // Calculate total_amount based on car price and days
-            $start = new DateTime($start_date);
-            $end = new DateTime($end_date);
-            $diff = $start->diff($end);
-            $days = $diff->days;
-            if ($days == 0) $days = 1; // minimum 1 day
+            // Calculate total duration in hours (including partial days)
+            $startDT = new DateTime($startDateTime);
+            $endDT = new DateTime($endDateTime);
+            $interval = $startDT->diff($endDT);
+            $hours = ($interval->days * 24) + $interval->h + ($interval->i > 0 ? 1 : 0); // round up partial hour
 
-            // Get car price_per_day
+            if ($hours == 0) $hours = 1; // minimum 1 hour charge
+
+            // Get price per day (you may want to also have price per hour)
             $stmtPrice = $conn->prepare("SELECT price_per_day FROM cars WHERE id = ?");
             $stmtPrice->bind_param("i", $car_id);
             $stmtPrice->execute();
@@ -63,26 +96,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmtPrice->fetch();
             $stmtPrice->close();
 
-            $total_amount = $price_per_day * $days;
+            // Calculate total amount based on hourly price (assuming price_per_day/24)
+            $price_per_hour = $price_per_day / 24;
+            $total_amount = $price_per_hour * $hours;
 
-            // Insert booking
-            $stmt = $conn->prepare("
-                INSERT INTO bookings (user_id, car_id, start_date, end_date, pickup_location, drop_location, status, total_amount)
-                VALUES (?, ?, ?, ?, ?, ?, 'booked', ?)
+            // Insert booking with times
+            $stmtInsert = $conn->prepare("
+                INSERT INTO bookings (user_id, car_id, start_date, start_time, end_date, end_time, pickup_location, drop_location, status, total_amount)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'booked', ?)
             ");
-            $stmt->bind_param("iissssd", $user_id, $car_id, $start_date, $end_date, $pickup_location, $drop_location, $total_amount);
+            $stmtInsert->bind_param("iissssssd", $user_id, $car_id, $start_date, $start_time, $end_date, $end_time, $pickup_location, $drop_location, $total_amount);
 
-            if ($stmt->execute()) {
+            if ($stmtInsert->execute()) {
                 $message = "Car booked successfully!";
             } else {
                 $message = "Error booking the car. Please try again.";
             }
+            $stmtInsert->close();
         }
     }
 }
-
-// Fetch cars for selection
-$cars = $conn->query("SELECT * FROM cars");
 ?>
 
 <!DOCTYPE html>
@@ -133,7 +166,7 @@ $cars = $conn->query("SELECT * FROM cars");
             margin-top: 20px;
             background: #fff;
             padding: 20px;
-            max-width: 450px;
+            max-width: 500px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
@@ -143,7 +176,7 @@ $cars = $conn->query("SELECT * FROM cars");
             margin-bottom: 5px;
             font-weight: 600;
         }
-        select, input[type="text"], input[type="date"], button {
+        select, input[type="text"], input[type="date"], input[type="time"], button {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
@@ -182,19 +215,27 @@ $cars = $conn->query("SELECT * FROM cars");
 
         <?php if (!empty($message)): ?>
             <div class="message <?= strpos($message, 'successfully') !== false ? 'success' : 'error' ?>">
-                <?= htmlspecialchars($message) ?>
+                <?= $message ?>
             </div>
         <?php endif; ?>
 
-        <form method="post" onsubmit="return validateDates()">
+        <form method="post" onsubmit="return validateForm()">
+            <label for="start_date">Start Date:</label>
+            <input type="date" id="start_date" name="start_date" required min="<?= date('Y-m-d') ?>">
+
+            <label for="start_time">Start Time:</label>
+            <input type="time" id="start_time" name="start_time" required value="09:00">
+
+            <label for="end_date">End Date:</label>
+            <input type="date" id="end_date" name="end_date" required min="<?= date('Y-m-d') ?>">
+
+            <label for="end_time">End Time:</label>
+            <input type="time" id="end_time" name="end_time" required value="18:00">
+
             <label for="car_id">Choose Car:</label>
             <select name="car_id" id="car_id" required>
                 <option value="">-- Select a car --</option>
-                <?php while ($car = $cars->fetch_assoc()): ?>
-                    <option value="<?= htmlspecialchars($car['id']) ?>">
-                        <?= htmlspecialchars($car['name']) ?> - <?= htmlspecialchars($car['model']) ?>
-                    </option>
-                <?php endwhile; ?>
+                <!-- Options filled dynamically -->
             </select>
 
             <label for="pickup_location">Pickup Location:</label>
@@ -203,26 +244,82 @@ $cars = $conn->query("SELECT * FROM cars");
             <label for="drop_location">Drop Location:</label>
             <input type="text" name="drop_location" id="drop_location" required placeholder="Enter drop location">
 
-            <label for="start_date">Start Date:</label>
-            <input type="date" id="start_date" name="start_date" required min="<?= date('Y-m-d') ?>">
-
-            <label for="end_date">End Date:</label>
-            <input type="date" id="end_date" name="end_date" required min="<?= date('Y-m-d') ?>">
-
             <button type="submit">Book Car</button>
         </form>
     </div>
 
     <script>
-        function validateDates() {
+        function validateForm() {
             const startDate = document.getElementById('start_date').value;
+            const startTime = document.getElementById('start_time').value;
             const endDate = document.getElementById('end_date').value;
-            if (endDate < startDate) {
-                alert("End date cannot be before start date.");
+            const endTime = document.getElementById('end_time').value;
+
+            if (!startDate || !startTime || !endDate || !endTime) {
+                alert("Please fill all date and time fields.");
+                return false;
+            }
+
+            const startDateTime = new Date(startDate + 'T' + startTime);
+            const endDateTime = new Date(endDate + 'T' + endTime);
+
+            if (endDateTime <= startDateTime) {
+                alert("End date/time must be after start date/time.");
                 return false;
             }
             return true;
         }
+
+        async function fetchAvailableCars() {
+            const startDate = document.getElementById('start_date').value;
+            const startTime = document.getElementById('start_time').value;
+            const endDate = document.getElementById('end_date').value;
+            const endTime = document.getElementById('end_time').value;
+
+            const carSelect = document.getElementById('car_id');
+
+            if (!startDate || !startTime || !endDate || !endTime) {
+                carSelect.innerHTML = '<option value="">-- Select a car --</option>';
+                return;
+            }
+
+            const startDateTime = new Date(startDate + 'T' + startTime);
+            const endDateTime = new Date(endDate + 'T' + endTime);
+
+            if (endDateTime <= startDateTime) {
+                alert('End date/time must be after start date/time.');
+                carSelect.innerHTML = '<option value="">-- Select a car --</option>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`get_available_cars.php?start_date=${startDate}&start_time=${startTime}&end_date=${endDate}&end_time=${endTime}`);
+                const cars = await response.json();
+
+                carSelect.innerHTML = '<option value="">-- Select a car --</option>';
+
+                if (cars.length === 0) {
+                    carSelect.innerHTML = '<option value="">No cars available for selected date/time range</option>';
+                    return;
+                }
+
+                cars.forEach(car => {
+                    const option = document.createElement('option');
+                    option.value = car.id;
+                    option.textContent = `${car.name} - ${car.model}`;
+                    carSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error fetching available cars:', error);
+            }
+        }
+
+        document.getElementById('start_date').addEventListener('change', fetchAvailableCars);
+        document.getElementById('start_time').addEventListener('change', fetchAvailableCars);
+        document.getElementById('end_date').addEventListener('change', fetchAvailableCars);
+        document.getElementById('end_time').addEventListener('change', fetchAvailableCars);
+
+        window.addEventListener('DOMContentLoaded', fetchAvailableCars);
     </script>
 </body>
 </html>

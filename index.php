@@ -1,15 +1,42 @@
-
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+include 'db.php';
 session_start();
-require 'db.php';
 
-// Optional: check if user is logged in, or just show cars
-// if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'user') {
-//    header('Location: login.php');
-//    exit;
-//}
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'user') {
+    header('Location: login.php');
+    exit;
+}
 
+// Fetch all available cars for listing
 $result = $conn->query("SELECT * FROM cars WHERE status = 'available' ORDER BY id DESC");
+
+// Function to get recommended cars (top 5 by total bookings)
+function getRecommendedCars($conn, $limit = 5) {
+    $sql = "
+        SELECT c.id, c.name, c.model, c.price_per_day, COUNT(b.id) AS booking_count
+        FROM cars c
+        LEFT JOIN bookings b ON c.id = b.car_id
+        GROUP BY c.id
+        ORDER BY booking_count DESC
+        LIMIT ?
+    ";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $limit);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $cars = [];
+    while ($row = $result->fetch_assoc()) {
+        $cars[] = $row;
+    }
+    $stmt->close();
+    return $cars;
+}
+
+$recommendedCars = getRecommendedCars($conn);
 ?>
 
 <!DOCTYPE html>
@@ -46,6 +73,7 @@ $result = $conn->query("SELECT * FROM cars WHERE status = 'available' ORDER BY i
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
         }
         th, td {
             padding: 12px 15px;
@@ -69,20 +97,33 @@ $result = $conn->query("SELECT * FROM cars WHERE status = 'available' ORDER BY i
         a.button:hover {
             background: #218838;
         }
+        section h2 {
+            color: #007bff;
+            margin-bottom: 15px;
+        }
+        a.book-link {
+            color: #007bff;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        a.book-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
     <div class="navbar">
         <div><strong>User Dashboard</strong></div>
         <div>
-        <a href="dashboard_user.php">Home</a>
-        <a href="index.php">Browse Cars</a>
-         <a href="book_car.php">Book</a>
-        <a href="my_bookings.php">My Bookings</a>
-           <a href="profile.php">Profle</a>
-        <a href="logout.php">Logout</a>
+            <a href="dashboard_user.php">Home</a>
+            <a href="index.php">Browse Cars</a>
+            <a href="book_car.php">Book</a>
+            <a href="my_bookings.php">My Bookings</a>
+            <a href="profile.php">Profile</a>
+            <a href="logout.php">Logout</a>
+        </div>
     </div>
-    </div>
+
     <h2>Available Cars for Rent</h2>
 
     <table>
@@ -110,5 +151,34 @@ $result = $conn->query("SELECT * FROM cars WHERE status = 'available' ORDER BY i
         </tbody>
     </table>
 
+    <section>
+        <h2>Recommended Cars</h2>
+        <?php if (count($recommendedCars) > 0): ?>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Model</th>
+                        <th>Price Per Day</th>
+                        <th>Total Bookings</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($recommendedCars as $car): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($car['name']); ?></td>
+                        <td><?php echo htmlspecialchars($car['model']); ?></td>
+                        <td>Rs <?php echo number_format($car['price_per_day'], 2); ?></td>
+                        <td><?php echo (int)$car['booking_count']; ?></td>
+                        <td><a class="book-link" href="book_car.php?id=<?php echo $car['id']; ?>">Book Now</a></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php else: ?>
+            <p>No recommendations available at the moment.</p>
+        <?php endif; ?>
+    </section>
 </body>
 </html>

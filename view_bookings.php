@@ -7,7 +7,9 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
     exit;
 }
 
-$sql = "SELECT b.id, u.name AS user_name, c.name AS car_name, b.start_date, b.end_date, b.booking_date,
+// Updated query assuming start_time and end_time columns exist
+$sql = "SELECT b.id, u.name AS user_name, c.name AS car_name, 
+               b.start_date, b.end_date, b.start_time, b.end_time, b.booking_date,
                b.status, b.total_amount, b.pickup_location, b.drop_location
         FROM bookings b
         JOIN users u ON b.user_id = u.id
@@ -71,12 +73,14 @@ if (!$result) {
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             border-radius: 8px;
             overflow: hidden;
+            table-layout: fixed;
         }
 
         th, td {
-            padding: 12px 15px;
+            padding: 12px 10px;
             border-bottom: 1px solid #ddd;
             text-align: left;
+            word-wrap: break-word;
         }
 
         th {
@@ -121,19 +125,19 @@ if (!$result) {
         }
 
         .status-booked {
-            color: green;
+            color: #0d6efd;
             font-weight: bold;
         }
         .status-confirmed {
-            color: orange;
+            color: #198754;
             font-weight: bold;
         }
         .status-cancelled {
-            color: red;
+            color: #dc3545;
             font-weight: bold;
         }
         .status-completed {
-            color: gray;
+            color: #6c757d;
             font-weight: bold;
         }
     </style>
@@ -161,8 +165,8 @@ if (!$result) {
                     <th>ID</th>
                     <th>User Name</th>
                     <th>Car Name</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
+                    <th>Start Date & Time</th>
+                    <th>End Date & Time</th>
                     <th>Booking Date</th>
                     <th>Pickup Location</th>
                     <th>Drop Location</th>
@@ -177,8 +181,8 @@ if (!$result) {
                     <td><?= htmlspecialchars($row['id']) ?></td>
                     <td><?= htmlspecialchars($row['user_name']) ?></td>
                     <td><?= htmlspecialchars($row['car_name']) ?></td>
-                    <td><?= htmlspecialchars($row['start_date']) ?></td>
-                    <td><?= htmlspecialchars($row['end_date']) ?></td>
+                    <td><?= htmlspecialchars($row['start_date']) ?> <?= isset($row['start_time']) ? htmlspecialchars($row['start_time']) : '' ?></td>
+                    <td><?= htmlspecialchars($row['end_date']) ?> <?= isset($row['end_time']) ? htmlspecialchars($row['end_time']) : '' ?></td>
                     <td><?= htmlspecialchars($row['booking_date']) ?></td>
                     <td><?= htmlspecialchars($row['pickup_location']) ?></td>
                     <td><?= htmlspecialchars($row['drop_location']) ?></td>
@@ -188,20 +192,20 @@ if (!$result) {
                     </td>
                     <td>
                         <?php if ($row['status'] === 'booked'): ?>
-                            <form method="post" action="admin_booking_action.php" onsubmit="return confirm('Confirm this booking?');">
+                            <form method="post" action="admin_booking_action.php" onsubmit="return confirm('Confirm this booking?');" style="display:inline-block;">
                                 <input type="hidden" name="booking_id" value="<?= $row['id'] ?>">
                                 <button type="submit" name="action" value="confirm" class="confirm">Confirm</button>
                             </form>
-                            <form method="post" action="admin_booking_action.php" onsubmit="return confirm('Cancel this booking?');">
+                            <form method="post" action="admin_booking_action.php" onsubmit="return confirm('Cancel this booking?');" style="display:inline-block;">
                                 <input type="hidden" name="booking_id" value="<?= $row['id'] ?>">
                                 <button type="submit" name="action" value="cancel" class="cancel">Cancel</button>
                             </form>
                         <?php elseif ($row['status'] === 'confirmed'): ?>
-                            <form method="post" action="admin_booking_action.php" onsubmit="return confirm('Cancel this booking?');">
+                            <form method="post" action="admin_booking_action.php" onsubmit="return confirm('Cancel this booking?');" style="display:inline-block;">
                                 <input type="hidden" name="booking_id" value="<?= $row['id'] ?>">
                                 <button type="submit" name="action" value="cancel" class="cancel">Cancel</button>
                             </form>
-                            <form method="post" action="admin_booking_action.php" onsubmit="return confirm('Mark booking as completed?');">
+                            <form method="post" action="admin_booking_action.php" onsubmit="return confirm('Mark booking as completed?');" style="display:inline-block;">
                                 <input type="hidden" name="booking_id" value="<?= $row['id'] ?>">
                                 <button type="submit" name="action" value="complete" class="complete">Complete</button>
                             </form>

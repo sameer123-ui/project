@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Jun 21, 2025 at 08:06 AM
+-- Generation Time: Jun 22, 2025 at 09:00 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -39,27 +39,34 @@ CREATE TABLE `bookings` (
   `pickup_location_id` int(11) DEFAULT NULL,
   `drop_location_id` int(11) DEFAULT NULL,
   `pickup_location` varchar(255) NOT NULL DEFAULT '',
-  `drop_location` varchar(255) NOT NULL DEFAULT ''
+  `drop_location` varchar(255) NOT NULL DEFAULT '',
+  `start_time` time NOT NULL DEFAULT '00:00:00',
+  `end_time` time NOT NULL DEFAULT '23:59:59'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `bookings`
 --
 
-INSERT INTO `bookings` (`id`, `user_id`, `car_id`, `start_date`, `end_date`, `total_amount`, `booking_date`, `status`, `pickup_location_id`, `drop_location_id`, `pickup_location`, `drop_location`) VALUES
-(1, 2, 2, '2025-06-13', '2025-06-14', 1777776.00, '2025-06-13 05:33:57', 'cancelled', NULL, NULL, '', ''),
-(2, 2, 2, '2025-06-17', '2025-06-17', NULL, '2025-06-16 05:55:03', 'cancelled', NULL, NULL, '', ''),
-(3, 3, 1, '2025-06-17', '2025-06-18', NULL, '2025-06-16 06:29:27', 'cancelled', NULL, NULL, '', ''),
-(4, 3, 4, '2025-06-17', '2025-06-18', NULL, '2025-06-16 06:43:00', 'completed', NULL, NULL, '', ''),
-(5, 2, 4, '2025-06-16', '2025-06-16', NULL, '2025-06-16 07:00:58', 'completed', NULL, NULL, '', ''),
-(6, 2, 2, '2025-06-16', '2025-06-17', NULL, '2025-06-16 07:05:44', 'completed', NULL, NULL, '', ''),
-(7, 3, 1, '2025-06-28', '2025-06-28', NULL, '2025-06-16 07:11:18', 'completed', NULL, NULL, '', ''),
-(8, 2, 4, '2025-06-16', '2025-06-16', NULL, '2025-06-16 07:15:35', 'completed', NULL, NULL, '', ''),
-(9, 2, 2, '2025-06-17', '2025-06-30', NULL, '2025-06-17 01:59:52', 'cancelled', NULL, NULL, '', ''),
-(10, 2, 2, '2025-06-22', '2025-06-23', NULL, '2025-06-21 05:11:16', 'completed', NULL, NULL, '', ''),
-(11, 2, 1, '2025-06-22', '2025-06-22', 1000000.00, '2025-06-21 05:13:21', 'completed', NULL, NULL, '', ''),
-(12, 3, 1, '2025-06-21', '2025-06-21', 1000000.00, '2025-06-21 05:15:16', 'completed', NULL, NULL, '', ''),
-(13, 2, 5, '2025-06-22', '2025-06-23', 50000.00, '2025-06-21 05:55:52', 'cancelled', NULL, NULL, 'Samakhusi', 'Gorkha');
+INSERT INTO `bookings` (`id`, `user_id`, `car_id`, `start_date`, `end_date`, `total_amount`, `booking_date`, `status`, `pickup_location_id`, `drop_location_id`, `pickup_location`, `drop_location`, `start_time`, `end_time`) VALUES
+(1, 2, 2, '2025-06-13', '2025-06-14', 1777776.00, '2025-06-13 05:33:57', 'cancelled', NULL, NULL, '', '', '00:00:00', '23:59:59'),
+(2, 2, 2, '2025-06-17', '2025-06-17', NULL, '2025-06-16 05:55:03', 'cancelled', NULL, NULL, '', '', '00:00:00', '23:59:59'),
+(3, 3, 1, '2025-06-17', '2025-06-18', NULL, '2025-06-16 06:29:27', 'cancelled', NULL, NULL, '', '', '00:00:00', '23:59:59'),
+(4, 3, 4, '2025-06-17', '2025-06-18', NULL, '2025-06-16 06:43:00', 'completed', NULL, NULL, '', '', '00:00:00', '23:59:59'),
+(5, 2, 4, '2025-06-16', '2025-06-16', NULL, '2025-06-16 07:00:58', 'completed', NULL, NULL, '', '', '00:00:00', '23:59:59'),
+(6, 2, 2, '2025-06-16', '2025-06-17', NULL, '2025-06-16 07:05:44', 'completed', NULL, NULL, '', '', '00:00:00', '23:59:59'),
+(7, 3, 1, '2025-06-28', '2025-06-28', NULL, '2025-06-16 07:11:18', 'completed', NULL, NULL, '', '', '00:00:00', '23:59:59'),
+(8, 2, 4, '2025-06-16', '2025-06-16', NULL, '2025-06-16 07:15:35', 'completed', NULL, NULL, '', '', '00:00:00', '23:59:59'),
+(9, 2, 2, '2025-06-17', '2025-06-30', NULL, '2025-06-17 01:59:52', 'cancelled', NULL, NULL, '', '', '00:00:00', '23:59:59'),
+(10, 2, 2, '2025-06-22', '2025-06-23', NULL, '2025-06-21 05:11:16', 'completed', NULL, NULL, '', '', '00:00:00', '23:59:59'),
+(11, 2, 1, '2025-06-22', '2025-06-22', 1000000.00, '2025-06-21 05:13:21', 'completed', NULL, NULL, '', '', '00:00:00', '23:59:59'),
+(12, 3, 1, '2025-06-21', '2025-06-21', 1000000.00, '2025-06-21 05:15:16', 'completed', NULL, NULL, '', '', '00:00:00', '23:59:59'),
+(13, 2, 5, '2025-06-22', '2025-06-23', 50000.00, '2025-06-21 05:55:52', 'cancelled', NULL, NULL, 'Samakhusi', 'Gorkha', '00:00:00', '23:59:59'),
+(14, 2, 1, '2025-06-23', '2025-06-23', 1000000.00, '2025-06-22 05:31:10', 'cancelled', NULL, NULL, 'Samakhusi', 'Tanahun', '00:00:00', '23:59:59'),
+(15, 4, 5, '2025-06-22', '2025-06-22', 2083.33, '2025-06-22 05:54:26', 'cancelled', NULL, NULL, 'kalanki', 'Golden gate', '05:00:00', '06:00:00'),
+(16, 3, 7, '2025-06-24', '2025-06-26', 142916.67, '2025-06-22 06:03:06', 'cancelled', NULL, NULL, 'Satdobato', 'Kavre', '09:00:00', '10:00:00'),
+(17, 4, 1, '2025-06-23', '2025-06-23', 375000.00, '2025-06-22 06:24:21', 'completed', NULL, NULL, 'kalanki', 'Golden gate', '09:00:00', '18:00:00'),
+(18, 3, 1, '2025-06-23', '2025-06-23', 41666.67, '2025-06-22 06:25:29', 'completed', NULL, NULL, 'Satdobato', 'Kavre', '19:00:00', '20:00:00');
 
 -- --------------------------------------------------------
 
@@ -125,7 +132,8 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `name`, `email`, `password`, `role`, `created_at`) VALUES
 (1, 'Admin', 'admin@admin.com', '25f43b1486ad95a1398e3eeb3d83bc4010015fcc9bedb35b432e00298d5021f7', 'admin', '2025-06-13 04:46:19'),
 (2, 'Sahaj', 'sahaj@gmail.com', '04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb', 'user', '2025-06-13 04:48:37'),
-(3, 'sushil', 'sushil@gmail.com', '04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb', 'user', '2025-06-16 06:29:09');
+(3, 'sushil', 'sushil@gmail.com', '04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb', 'user', '2025-06-16 06:29:09'),
+(4, 'kushal', 'kushal@gmail.com', '04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb', 'user', '2025-06-22 05:53:29');
 
 --
 -- Indexes for dumped tables
@@ -168,7 +176,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `cars`
@@ -186,7 +194,7 @@ ALTER TABLE `locations`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- Constraints for dumped tables

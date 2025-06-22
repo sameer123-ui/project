@@ -10,6 +10,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'user') {
 $user_id = $_SESSION['user']['id'];
 
 // Handle cancellation
+$message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_id'])) {
     $cancel_id = intval($_POST['cancel_id']);
     // Verify booking belongs to user and is cancellable
@@ -49,159 +50,156 @@ $result = $stmt->get_result();
 <html>
 <head>
     <title>My Bookings</title>
-  <style>
-   body {
-    font-family: Arial, sans-serif;
-    background: #f2f2f2;
-    margin: 0; padding: 0;
-}
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f2f2;
+            margin: 0; padding: 0;
+        }
 
-.navbar {
-    background: #0069d9;
-    color: white;
-    padding: 15px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+        .navbar {
+            background: #0069d9;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-.navbar a {
-    color: white;
-    text-decoration: none;
-    margin-left: 15px;
-    font-weight: bold;
-}
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin-left: 15px;
+            font-weight: bold;
+        }
 
-.navbar a:hover {
-    text-decoration: underline;
-}
+        .navbar a:hover {
+            text-decoration: underline;
+        }
 
-.container {
-    max-width: 1000px;
-    margin: 40px auto;
-    background: white;
-    padding: 30px 15px; /* horizontal padding */
-    border-radius: 8px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-    overflow-x: auto; /* allow horizontal scroll */
-}
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            background: white;
+            padding: 30px 15px;
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
 
-h2 {
-    margin-bottom: 25px;
-    color: #0069d9;
-}
+        h2 {
+            margin-bottom: 25px;
+            color: #0069d9;
+        }
 
-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-    font-size: 16px;
-    background: white;
-    table-layout: fixed; /* fixed layout for stable columns */
-}
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            font-size: 16px;
+            background: white;
+            table-layout: fixed;
+        }
 
-thead tr {
-    background: #0d6efd;
-    color: white;
-    text-align: left;
-    font-weight: 600;
-}
+        thead tr {
+            background: #0d6efd;
+            color: white;
+            text-align: left;
+            font-weight: 600;
+        }
 
-thead th {
-    padding: 15px 10px;
-    user-select: none;
-    text-align: center;
-}
+        thead th {
+            padding: 15px 10px;
+            user-select: none;
+            text-align: center;
+        }
 
-tbody tr {
-    border-bottom: 1px solid #ddd;
-    transition: background-color 0.3s ease;
-    cursor: default;
-}
+        tbody tr {
+            border-bottom: 1px solid #ddd;
+            transition: background-color 0.3s ease;
+            cursor: default;
+        }
 
-tbody tr:nth-child(even) {
-    background-color: #f9f9f9;
-}
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
 
-tbody tr:hover {
-    background-color: #e7f0ff;
-}
+        tbody tr:hover {
+            background-color: #e7f0ff;
+        }
 
-tbody td {
-    padding: 14px 10px;
-    vertical-align: middle;
-    color: #333;
-    word-wrap: break-word; /* allow wrapping */
-    text-align: center;
-}
+        tbody td {
+            padding: 14px 10px;
+            vertical-align: middle;
+            color: #333;
+            word-wrap: break-word;
+            text-align: center;
+        }
 
-.status-booked {
-    color: #0d6efd;
-    font-weight: 700;
-}
+        .status-booked {
+            color: #0d6efd;
+            font-weight: 700;
+        }
 
-.status-confirmed {
-    color: #198754;
-    font-weight: 700;
-}
+        .status-confirmed {
+            color: #198754;
+            font-weight: 700;
+        }
 
-.status-cancelled {
-    color: #dc3545;
-    font-weight: 700;
-}
+        .status-cancelled {
+            color: #dc3545;
+            font-weight: 700;
+        }
 
-.status-completed {
-    color: #6c757d;
-    font-weight: 700;
-}
+        .status-completed {
+            color: #6c757d;
+            font-weight: 700;
+        }
 
-.action-btn {
-    background: #dc3545;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.25s ease;
-}
+        .action-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.25s ease;
+        }
 
-.action-btn:hover {
-    background: #b02a37;
-}
+        .action-btn:hover {
+            background: #b02a37;
+        }
 
-.message {
-    margin-bottom: 20px;
-    padding: 12px;
-    border-radius: 8px;
-    font-weight: 600;
-    text-align: center;
-}
+        .message {
+            margin-bottom: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+        }
 
-.success {
-    background-color: #d1fae5;
-    color: #065f46;
-    border: 1.5px solid #10b981;
-}
+        .success {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1.5px solid #10b981;
+        }
 
-.error {
-    background-color: #fee2e2;
-    color: #b91c1c;
-    border: 1.5px solid #ef4444;
-}
+        .error {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border: 1.5px solid #ef4444;
+        }
 
-/* Responsive font size on small screens */
-@media (max-width: 600px) {
-    table {
-        font-size: 14px;
-    }
-}
-
-</style>
-
+        @media (max-width: 600px) {
+            table {
+                font-size: 14px;
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -245,6 +243,10 @@ tbody td {
                 </thead>
                 <tbody>
                     <?php while ($booking = $result->fetch_assoc()): ?>
+                        <?php
+                        // Show "Pending" for "booked" status
+                        $display_status = $booking['status'] === 'booked' ? 'Pending' : ucfirst($booking['status']);
+                        ?>
                         <tr>
                             <td><?= $booking['id']; ?></td>
                             <td><?= htmlspecialchars($booking['car_name']); ?></td>
@@ -254,7 +256,7 @@ tbody td {
                             <td><?= htmlspecialchars($booking['end_date']); ?></td>
                             <td><?= $booking['booking_date']; ?></td>
                             <td>Rs <?= number_format($booking['total_amount'], 2); ?></td>
-                            <td class="status-<?= $booking['status']; ?>"><?= ucfirst($booking['status']); ?></td>
+                            <td class="status-<?= $booking['status']; ?>"><?= $display_status ?></td>
                             <td>
                                 <?php if (in_array($booking['status'], ['booked', 'confirmed'])): ?>
                                     <form method="post" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
