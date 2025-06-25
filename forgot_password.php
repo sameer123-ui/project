@@ -1,4 +1,5 @@
 <?php
+// Your PHP logic remains the same
 include 'db.php';
 session_start();
 
@@ -56,79 +57,118 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Reset Password</title>
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #e9eff1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .form-box {
-            background: #fff;
-            padding: 30px;
-            width: 100%;
-            max-width: 400px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #333;
-        }
-        input, button {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0069d9;
-        }
-        .msg {
-            text-align: center;
-            font-weight: bold;
-            margin-top: 15px;
-            color: #28a745;
-        }
-        .error {
-            color: #dc3545;
-        }
-        a {
-            color: #007bff;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reset Password</title>
+<style>
+  /* Reset and base */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: #333;
+  }
+  .form-box {
+    background: #fff;
+    padding: 40px 35px;
+    width: 100%;
+    max-width: 420px;
+    border-radius: 15px;
+    box-shadow:
+      0 10px 15px rgba(101, 71, 255, 0.3),
+      0 5px 8px rgba(37, 117, 252, 0.2);
+    text-align: center;
+  }
+  h2 {
+    margin-bottom: 25px;
+    font-weight: 700;
+    font-size: 1.9rem;
+    color: #4a00e0;
+    letter-spacing: 1.5px;
+  }
+  input[type="email"],
+  input[type="password"] {
+    width: 100%;
+    padding: 14px 18px;
+    margin: 12px 0 20px 0;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+  }
+  input[type="email"]:focus,
+  input[type="password"]:focus {
+    outline: none;
+    border-color: #6a11cb;
+    box-shadow: 0 0 8px #6a11cbaa;
+  }
+  button {
+    width: 100%;
+    padding: 15px;
+    background: #6a11cb;
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 6px 15px #6a11cb88;
+    transition: background 0.3s ease;
+  }
+  button:hover {
+    background: #4a00e0;
+    box-shadow: 0 8px 18px #4a00e0cc;
+  }
+  .msg {
+    margin-top: 20px;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+  .msg.error {
+    color: #e74c3c;
+  }
+  .msg.success {
+    color: #27ae60;
+  }
+  a {
+    color: #6a11cb;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
+  }
+  a:hover {
+    color: #4a00e0;
+    text-decoration: underline;
+  }
+  /* Responsive tweaks */
+  @media (max-width: 480px) {
+    .form-box {
+      padding: 30px 25px;
+    }
+  }
+</style>
 </head>
 <body>
 
 <div class="form-box">
     <?php if ($step === 1): ?>
         <h2>Forgot Password</h2>
-        <form method="POST">
+        <form method="POST" novalidate>
             <input type="email" name="email" placeholder="Enter your registered email" required />
             <button type="submit">Next</button>
         </form>
     <?php elseif ($step === 2): ?>
         <h2>Reset Password</h2>
-        <form method="POST">
+        <form method="POST" novalidate>
             <input type="password" name="new_password" placeholder="New Password" required minlength="6" />
             <input type="password" name="confirm_password" placeholder="Confirm New Password" required minlength="6" />
             <button type="submit">Reset Password</button>
@@ -136,12 +176,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <?php if ($message): ?>
-        <div class="msg <?php echo strpos($message, '❌') === 0 ? 'error' : ''; ?>">
+        <div class="msg <?php echo strpos($message, '❌') === 0 ? 'error' : 'success'; ?>">
             <?php echo $message; ?>
         </div>
     <?php endif; ?>
 
-    <div style="text-align:center; margin-top: 10px;">
+    <div style="margin-top: 20px;">
         <a href="login.php">Back to Login</a>
     </div>
 </div>
