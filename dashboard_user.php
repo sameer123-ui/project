@@ -31,21 +31,21 @@ function getUserBookingCount($conn, $user_id, $status = null) {
     return $count;
 }
 
-function getTopPopularCars($conn, $limit = 5) {
+function getRecommendedCars($conn, $limit = 5) {
     $sql = "
-        SELECT c.id, c.name, c.model, c.price_per_day, 
-               COUNT(b.id) AS booking_count
+        SELECT c.id, c.name, c.model, c.price_per_day, COUNT(b.id) AS booking_count,
+               (COUNT(b.id) / c.price_per_day) AS score
         FROM cars c
         LEFT JOIN bookings b ON c.id = b.car_id
+        WHERE c.status = 'available'
         GROUP BY c.id
-        ORDER BY booking_count DESC
+        ORDER BY score DESC
         LIMIT ?
     ";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $limit);
     $stmt->execute();
     $result = $stmt->get_result();
-
     $cars = [];
     while ($row = $result->fetch_assoc()) {
         $cars[] = $row;
@@ -58,7 +58,7 @@ $totalBookings = getUserBookingCount($conn, $user_id);
 $upcomingBookings = getUserBookingCount($conn, $user_id, 'booked');
 $completedBookings = getUserBookingCount($conn, $user_id, 'completed');
 
-$recommendedCars = getTopPopularCars($conn, 5);
+$recommendedCars = getRecommendedCars($conn, 5);
 ?>
 
 <!DOCTYPE html>

@@ -14,14 +14,19 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'user') {
 // Fetch all available cars for listing
 $result = $conn->query("SELECT * FROM cars WHERE status = 'available' ORDER BY id DESC");
 
-// Function to get recommended cars (top 5 by total bookings)
+// Function to get custom sorted recommended cars
 function getRecommendedCars($conn, $limit = 5) {
     $sql = "
-        SELECT c.id, c.name, c.model, c.price_per_day, COUNT(b.id) AS booking_count
+        SELECT c.id, c.name, c.model, c.price_per_day, COUNT(b.id) AS booking_count,
+               CASE 
+                   WHEN c.price_per_day > 0 THEN (COUNT(b.id) / c.price_per_day) * 100000
+                   ELSE 0
+               END AS score
         FROM cars c
         LEFT JOIN bookings b ON c.id = b.car_id
+        WHERE c.status = 'available'
         GROUP BY c.id
-        ORDER BY booking_count DESC
+        ORDER BY score DESC
         LIMIT ?
     ";
     $stmt = $conn->prepare($sql);
@@ -161,6 +166,7 @@ $recommendedCars = getRecommendedCars($conn);
                         <th>Model</th>
                         <th>Price Per Day</th>
                         <th>Total Bookings</th>
+                        <th>Score</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -171,6 +177,7 @@ $recommendedCars = getRecommendedCars($conn);
                         <td><?php echo htmlspecialchars($car['model']); ?></td>
                         <td>Rs <?php echo number_format($car['price_per_day'], 2); ?></td>
                         <td><?php echo (int)$car['booking_count']; ?></td>
+                        <td><?php echo number_format($car['score'], 3); ?></td>
                         <td><a class="book-link" href="book_car.php?id=<?php echo $car['id']; ?>">Book Now</a></td>
                     </tr>
                 <?php endforeach; ?>
